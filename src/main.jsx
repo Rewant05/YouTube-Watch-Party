@@ -100,109 +100,109 @@ function App() {
   }, [canControl]);
 
   useEffect(() => {
-  if (!roomId) return;
+    if (!roomId) return;
 
-  let cancelled = false;
+    let cancelled = false;
 
-  function createPlayer() {
-    if (cancelled) return;
-    if (playerRef.current) return;
-    if (!window.YT || !window.YT.Player) return;
+    function createPlayer() {
+      if (cancelled) return;
+      if (playerRef.current) return;
+      if (!window.YT || !window.YT.Player) return;
 
-    const playerElement = document.getElementById("youtube-player");
+      const playerElement = document.getElementById("youtube-player");
 
-    if (!playerElement) {
-      setTimeout(createPlayer, 300);
-      return;
-    }
+      if (!playerElement) {
+        setTimeout(createPlayer, 300);
+        return;
+      }
 
-    playerRef.current = new window.YT.Player("youtube-player", {
-      width: "100%",
-      height: "100%",
-      videoId: currentVideoRef.current || videoId || "dQw4w9WgXcQ",
-      playerVars: {
-        autoplay: 0,
-        controls: 1,
-        rel: 0,
-        modestbranding: 1,
-        playsinline: 1,
-        enablejsapi: 1,
-        origin: window.location.origin
-      },
-      events: {
-        onReady: (event) => {
-          playerReadyRef.current = true;
-
-          const activeVideo =
-            currentVideoRef.current || videoId || "dQw4w9WgXcQ";
-
-          event.target.cueVideoById({
-            videoId: activeVideo,
-            startSeconds: currentTime || 0
-          });
-
-          setDuration(event.target.getDuration?.() || 0);
-          setPlayerError("");
-          setStatus("YouTube player ready.");
-          socket.emit("request_sync");
+      playerRef.current = new window.YT.Player("youtube-player", {
+        width: "100%",
+        height: "100%",
+        videoId: currentVideoRef.current || videoId || "dQw4w9WgXcQ",
+        playerVars: {
+          autoplay: 0,
+          controls: 1,
+          rel: 0,
+          modestbranding: 1,
+          playsinline: 1,
+          enablejsapi: 1,
+          origin: window.location.origin
         },
+        events: {
+          onReady: (event) => {
+            playerReadyRef.current = true;
 
-        onError: (event) => {
-          const code = event?.data;
-          setPlayerError(
-            `YouTube player error ${code}. Try another public/embeddable video.`
-          );
-        },
+            const activeVideo =
+              currentVideoRef.current || videoId || "dQw4w9WgXcQ";
 
-        onStateChange: (event) => {
-          if (
-            !canControlRef.current ||
-            applyingRemoteRef.current ||
-            !playerRef.current ||
-            !window.YT
-          ) {
-            return;
-          }
+            event.target.cueVideoById({
+              videoId: activeVideo,
+              startSeconds: currentTime || 0
+            });
 
-          const time = playerRef.current.getCurrentTime?.() || 0;
+            setDuration(event.target.getDuration?.() || 0);
+            setPlayerError("");
+            setStatus("YouTube player ready.");
+            socket.emit("request_sync");
+          },
 
-          if (event.data === window.YT.PlayerState.PLAYING) {
-            socket.emit("play", { currentTime: time });
-          }
+          onError: (event) => {
+            const code = event?.data;
+            setPlayerError(
+              `YouTube player error ${code}. Try another public/embeddable video.`
+            );
+          },
 
-          if (event.data === window.YT.PlayerState.PAUSED) {
-            socket.emit("pause", { currentTime: time });
+          onStateChange: (event) => {
+            if (
+              !canControlRef.current ||
+              applyingRemoteRef.current ||
+              !playerRef.current ||
+              !window.YT
+            ) {
+              return;
+            }
+
+            const time = playerRef.current.getCurrentTime?.() || 0;
+
+            if (event.data === window.YT.PlayerState.PLAYING) {
+              socket.emit("play", { currentTime: time });
+            }
+
+            if (event.data === window.YT.PlayerState.PAUSED) {
+              socket.emit("pause", { currentTime: time });
+            }
           }
         }
-      }
-    });
-  }
-
-  if (window.YT?.Player) {
-    createPlayer();
-  } else {
-    const previous = window.onYouTubeIframeAPIReady;
-
-    window.onYouTubeIframeAPIReady = () => {
-      previous?.();
-      createPlayer();
-    };
-
-    if (!document.querySelector("script[src='https://www.youtube.com/iframe_api']")) {
-      const tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
-      tag.async = true;
-      document.body.appendChild(tag);
+      });
     }
-  }
 
-  const retryTimer = setTimeout(createPlayer, 1000);
+    if (window.YT?.Player) {
+      createPlayer();
+    } else {
+      const previous = window.onYouTubeIframeAPIReady;
 
-  return () => {
-    cancelled = true;
-    clearTimeout(retryTimer);
-  };
-}, [roomId]);
+      window.onYouTubeIframeAPIReady = () => {
+        previous?.();
+        createPlayer();
+      };
+
+      if (!document.querySelector("script[src='https://www.youtube.com/iframe_api']")) {
+        const tag = document.createElement("script");
+        tag.src = "https://www.youtube.com/iframe_api";
+        tag.async = true;
+        document.body.appendChild(tag);
+      }
+    }
+
+    const retryTimer = setTimeout(createPlayer, 1000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(retryTimer);
+    };
+  }, [roomId]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -210,7 +210,7 @@ function App() {
       try {
         setCurrentTime(playerRef.current.getCurrentTime?.() || 0);
         setDuration(playerRef.current.getDuration?.() || 0);
-      } catch {}
+      } catch { }
     }, 600);
     return () => clearInterval(timer);
   }, []);
@@ -417,113 +417,113 @@ function App() {
       {showLoader && <PixelLoader />}
 
       <div className="app">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">Socket.IO • YouTube IFrame API • RBAC</p>
-          <h1>YouTube Watch Party</h1>
-          <p className="subtitle">Create a room, invite friends, sync YouTube playback in real time, and control permissions with Host/Moderator/Participant roles.</p>
-        </div>
-        <div className="role-pill">{roleText}</div>
-      </header>
-
-      {!roomId && (
-        <section className="landing panel">
-          <div className="form-card">
-            <h2>Start or join a room</h2>
-            <label>Your name<input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Rewant" /></label>
-            <label>YouTube URL or video ID<input value={videoInput} onChange={(e) => setVideoInput(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." /></label>
-            <button className="primary" onClick={createRoom}>Create Room as Host</button>
-            <div className="divider"><span>or</span></div>
-            <label>Room code<input value={roomInput} onChange={(e) => setRoomInput(e.target.value.toUpperCase())} placeholder="ABC123" /></label>
-            <button className="secondary" onClick={joinRoom}>Join Existing Room</button>
-            <p className="status">{status}</p>
+        <header className="hero">
+          <div>
+            <p className="eyebrow">Socket.IO • YouTube IFrame API • RBAC</p>
+            <h1>YouTube Watch Party</h1>
+            <p className="subtitle">Create a room, invite friends, sync YouTube playback in real time, and control permissions with Host/Moderator/Participant roles.</p>
           </div>
+          <div className="role-pill">{roleText}</div>
+        </header>
 
-          <div className="info-card">
-            <h3>Assignment coverage</h3>
-            <ul>
-              <li>Room creation and shareable room code</li>
-              <li>Real-time WebSocket synchronization</li>
-              <li>Play, pause, seek and video-change sync</li>
-              <li>Host/Moderator/Participant roles</li>
-              <li>Backend role validation</li>
-              <li>Host can promote/remove/transfer host</li>
-              <li>Bonus chat and AI helper</li>
-            </ul>
-          </div>
-        </section>
-      )}
-
-      {roomId && (
-        <main className="room-grid">
-          <section className="watch-panel panel">
-            <div className="room-bar">
-              <div><span className="muted">Room</span><strong>{roomId}</strong></div>
-              <button onClick={copyLink}>{copied ? "Copied!" : "Copy Invite Link"}</button>
-              <button className="danger-outline" onClick={leaveRoom}>Leave</button>
+        {!roomId && (
+          <section className="landing panel">
+            <div className="form-card">
+              <h2>Start or join a room</h2>
+              <label>Your name<input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Rewant" /></label>
+              <label>YouTube URL or video ID<input value={videoInput} onChange={(e) => setVideoInput(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." /></label>
+              <button className="primary" onClick={createRoom}>Create Room as Host</button>
+              <div className="divider"><span>or</span></div>
+              <label>Room code<input value={roomInput} onChange={(e) => setRoomInput(e.target.value.toUpperCase())} placeholder="ABC123" /></label>
+              <button className="secondary" onClick={joinRoom}>Join Existing Room</button>
+              <p className="status">{status}</p>
             </div>
 
-            <div className="player-shell">
-              <div id="youtube-player"></div>
-              {!canControl && <div className="viewer-lock">Watch-only mode: Host or Moderator controls playback.</div>}
-              {playerError && <div className="player-error">{playerError}</div>}
+            <div className="info-card">
+              <h3>Watch together, in sync</h3>
+              <ul>
+                <li>Create a private room and invite friends with a simple room code</li>
+                <li>Watch YouTube videos together with synced play, pause, seek, and video changes</li>
+                <li>Let the Host control the room or promote someone to Moderator</li>
+                <li>Keep Participants in watch-only mode for a smooth viewing experience</li>
+                <li>Chat live with everyone in the room while the video is playing</li>
+                <li>Transfer Host access or remove users when needed</li>
+                <li>Use the AI Watch Assistant for help with room controls and demo flow</li>
+              </ul>
             </div>
-
-            <div className="controls">
-              <button disabled={!canControl} onClick={playVideo}>Play</button>
-              <button disabled={!canControl} onClick={pauseVideo}>Pause</button>
-              <span>{formatTime(currentTime)}</span>
-              <input type="range" min="0" max={duration || 1} value={Math.min(currentTime, duration || 1)} onChange={seekVideo} disabled={!canControl} />
-              <span>{formatTime(duration)}</span>
-            </div>
-
-            <div className="change-video">
-              <input value={videoInput} onChange={(e) => setVideoInput(e.target.value)} disabled={!canControl} placeholder="Paste new YouTube URL" />
-              <button disabled={!canControl} onClick={changeVideo}>Change Video</button>
-            </div>
-            <p className="status">{status}</p>
           </section>
+        )}
 
-          <aside className="side-panel">
-            <section className="participants-card panel">
-              <h2>Participants</h2>
-              {participants.map((person) => (
-                <div className="participant" key={person.userId}>
-                  <div><strong>{person.username}</strong><span>{person.role}{person.userId === myUserId ? " • You" : ""}</span></div>
-                  {isHost && person.userId !== myUserId && (
-                    <div className="admin-actions">
-                      <select value={person.role} onChange={(e) => assignRole(person.userId, e.target.value)}>
-                        {ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
-                      </select>
-                      <button onClick={() => transferHost(person.userId)}>Make Host</button>
-                      <button className="danger" onClick={() => removeParticipant(person.userId)}>Remove</button>
-                    </div>
-                  )}
+        {roomId && (
+          <main className="room-grid">
+            <section className="watch-panel panel">
+              <div className="room-bar">
+                <div><span className="muted">Room</span><strong>{roomId}</strong></div>
+                <button onClick={copyLink}>{copied ? "Copied!" : "Copy Invite Link"}</button>
+                <button className="danger-outline" onClick={leaveRoom}>Leave</button>
+              </div>
+
+              <div className="player-shell">
+                <div id="youtube-player"></div>
+                {!canControl && <div className="viewer-lock">Watch-only mode: Host or Moderator controls playback.</div>}
+                {playerError && <div className="player-error">{playerError}</div>}
+              </div>
+
+              <div className="controls">
+                <button disabled={!canControl} onClick={playVideo}>Play</button>
+                <button disabled={!canControl} onClick={pauseVideo}>Pause</button>
+                <span>{formatTime(currentTime)}</span>
+                <input type="range" min="0" max={duration || 1} value={Math.min(currentTime, duration || 1)} onChange={seekVideo} disabled={!canControl} />
+                <span>{formatTime(duration)}</span>
+              </div>
+
+              <div className="change-video">
+                <input value={videoInput} onChange={(e) => setVideoInput(e.target.value)} disabled={!canControl} placeholder="Paste new YouTube URL" />
+                <button disabled={!canControl} onClick={changeVideo}>Change Video</button>
+              </div>
+              <p className="status">{status}</p>
+            </section>
+
+            <aside className="side-panel">
+              <section className="participants-card panel">
+                <h2>Participants</h2>
+                {participants.map((person) => (
+                  <div className="participant" key={person.userId}>
+                    <div><strong>{person.username}</strong><span>{person.role}{person.userId === myUserId ? " • You" : ""}</span></div>
+                    {isHost && person.userId !== myUserId && (
+                      <div className="admin-actions">
+                        <select value={person.role} onChange={(e) => assignRole(person.userId, e.target.value)}>
+                          {ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role}</option>)}
+                        </select>
+                        <button onClick={() => transferHost(person.userId)}>Make Host</button>
+                        <button className="danger" onClick={() => removeParticipant(person.userId)}>Remove</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </section>
+
+              <section className="chat-card panel">
+                <h2>Room Chat</h2>
+                <div className="chat-box">
+                  {chat.length === 0 && <p className="muted">No messages yet.</p>}
+                  {chat.map((item, i) => <div className="chat-message" key={`${item.timestamp}-${i}`}><strong>{item.username}</strong><span>{item.message}</span></div>)}
                 </div>
-              ))}
-            </section>
+                <form onSubmit={sendChat} className="chat-form"><input value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="Type a message..." /><button>Send</button></form>
+              </section>
 
-            <section className="chat-card panel">
-              <h2>Room Chat</h2>
-              <div className="chat-box">
-                {chat.length === 0 && <p className="muted">No messages yet.</p>}
-                {chat.map((item, i) => <div className="chat-message" key={`${item.timestamp}-${i}`}><strong>{item.username}</strong><span>{item.message}</span></div>)}
-              </div>
-              <form onSubmit={sendChat} className="chat-form"><input value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="Type a message..." /><button>Send</button></form>
-            </section>
+              <section className="ai-card panel">
+                <h2>AI Watch Assistant</h2>
+                <div className="ai-box">
+                  {aiMessages.map((m, i) => <div className={`ai-msg ${m.from}`} key={i}><span>{m.from === "ai" ? "AI" : "You"}</span><p>{m.text}</p></div>)}
+                </div>
+                <form onSubmit={askAi} className="chat-form"><input value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder="Ask about sync, roles, deployment..." /><button>Ask</button></form>
+              </section>
+            </aside>
+          </main>
+        )}
 
-            <section className="ai-card panel">
-              <h2>AI Watch Assistant</h2>
-              <div className="ai-box">
-                {aiMessages.map((m, i) => <div className={`ai-msg ${m.from}`} key={i}><span>{m.from === "ai" ? "AI" : "You"}</span><p>{m.text}</p></div>)}
-              </div>
-              <form onSubmit={askAi} className="chat-form"><input value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder="Ask about sync, roles, deployment..." /><button>Ask</button></form>
-            </section>
-          </aside>
-        </main>
-      )}
-
-      <footer>Built with React, Express, Socket.IO and YouTube IFrame API.</footer>
+        <footer>Built with React, Express, Socket.IO and YouTube IFrame API.</footer>
       </div>
     </>
   );
