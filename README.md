@@ -1,8 +1,8 @@
 # YouTube Watch Party Pro
 
-A real-time YouTube watch party app where people can join the same room and watch a video together in sync.
+A real-time YouTube watch party app where multiple users can join the same room and watch a YouTube video together in sync.
 
-The idea is simple: one person creates a room as the **Host**, shares the room link/code, and others join as **Participants**. When the Host plays, pauses, seeks, or changes the video, everyone in the room sees the same update instantly.
+The idea is simple: one user creates a room as the **Host**, shares the room link/code, and others join as **Participants**. When the Host plays, pauses, seeks, or changes the video, every connected user receives the same update in real time.
 
 This project was built as a full-stack intern assignment using **React, Vite, Node.js, Express, Socket.IO, and the YouTube IFrame API**.
 
@@ -10,35 +10,57 @@ This project was built as a full-stack intern assignment using **React, Vite, No
 
 ## Live Demo
 
-Add your deployed Render URL here after deployment:
+Live App:
 
 ```txt
-https://your-render-url.onrender.com
+https://youtube-watch-party-bfwn.onrender.com
 ```
 
-Health check endpoint:
+Health Check:
 
 ```txt
-https://your-render-url.onrender.com/api/health
+https://youtube-watch-party-bfwn.onrender.com/api/health
+```
+
+GitHub Repository:
+
+```txt
+https://github.com/Rewant05/YouTube-Watch-Party
 ```
 
 ---
 
-## What this app does
+## Assignment Coverage
 
-- Lets a user create a watch room with a unique room code
-- Lets other users join using the room code or invite link
-- Embeds a YouTube player inside the room
-- Keeps playback synchronized for everyone in the room
-- Syncs play, pause, seek, and video changes in real time
-- Shows the live participant list with roles
-- Supports Host, Moderator, Participant, and Viewer roles
+This project covers the required deliverables:
+
+| Requirement | Status |
+|---|---|
+| Working application running locally | Completed |
+| Public deployment | Completed on Render |
+| README with setup instructions and live URL | Completed |
+| Architecture overview | Included below |
+| WebSocket flow explanation | Included below |
+| Code walkthrough readiness | Included below |
+| Demo video/screenshots | Optional, can be added separately |
+
+---
+
+## What the app does
+
+- Creates a watch room with a unique room code
+- Allows users to join using a room code or invite link
+- Embeds a YouTube video player inside the room
+- Synchronizes play, pause, seek, and video changes in real time
+- Displays a live participant list with roles
+- Supports **Host**, **Moderator**, **Participant**, and **Viewer** roles
 - Validates permissions on the backend before accepting playback actions
 - Allows the Host to promote/demote users
 - Allows the Host to remove participants
-- Allows the Host to transfer Host role
+- Allows the Host to transfer the Host role
 - Includes live room chat
-- Includes an AI Watch Assistant for help, demo guidance, and explanation
+- Includes an AI Watch Assistant for help, demo guidance, and architecture explanation
+- Includes a custom loading screen and favicon for a more polished user experience
 
 ---
 
@@ -50,25 +72,25 @@ https://your-render-url.onrender.com/api/health
 | Backend | Node.js + Express |
 | Real-time Communication | Socket.IO |
 | Video Player | YouTube IFrame API |
-| Storage | In-memory room storage |
+| Room Storage | In-memory room storage |
 | Deployment | Render |
 
 ---
 
 ## How the app works
 
-The React frontend connects to the Node.js backend using Socket.IO. Every browser tab gets a unique socket ID.
+The React frontend connects to the Node.js backend using Socket.IO. Each browser tab gets a unique socket ID.
 
-When a user creates a room, the backend creates a `Room` object and stores it in memory. That room keeps track of:
+When a user creates a room, the backend creates a `Room` object and stores it in memory. The room keeps track of:
 
 - Room ID
-- Current video ID
+- Current YouTube video ID
 - Playback state
 - Current video timestamp
 - Connected participants
-- Roles of each participant
+- Role of each participant
 
-When a Host or Moderator performs an action such as play, pause, seek, or change video, the frontend sends that event to the backend.
+When a Host or Moderator performs an action such as play, pause, seek, or change video, the frontend sends a Socket.IO event to the backend.
 
 The backend then:
 
@@ -76,22 +98,24 @@ The backend then:
 2. Checks the user's role.
 3. Rejects the action if the user does not have permission.
 4. Updates the room state if the action is valid.
-5. Broadcasts the updated video state to everyone in that room.
+5. Broadcasts the updated video state to every connected user in that room.
 
-All connected users receive the latest `sync_state` event and their local YouTube player updates accordingly.
+Every client receives the latest `sync_state` event and updates its local YouTube player accordingly.
+
+This keeps all users synchronized while still making the backend responsible for permission validation.
 
 ---
 
 ## Role-Based Access Control
 
-| Role | What they can do |
+| Role | Permissions |
 |---|---|
 | Host | Full control: play, pause, seek, change video, assign roles, remove users, and transfer Host |
 | Moderator | Can play, pause, seek, and change video |
 | Participant | Watch-only |
 | Viewer | Watch-only |
 
-The frontend disables restricted controls for Participants/Viewers, but the main permission check happens on the backend. This means even if someone tries to manually trigger a restricted event, the server will reject it.
+The frontend disables restricted controls for Participants/Viewers, but the real permission check happens on the backend. This means even if someone manually triggers a restricted Socket.IO event, the server rejects it.
 
 ---
 
@@ -117,13 +141,76 @@ The frontend disables restricted controls for Participants/Viewers, but the main
 | Event | Purpose |
 |---|---|
 | `sync_state` | Sends the latest video state to all users |
-| `user_joined` | Notifies room when a new user joins |
-| `user_left` | Notifies room when a user leaves |
+| `user_joined` | Notifies the room when a new user joins |
+| `user_left` | Notifies the room when a user leaves |
 | `participants_updated` | Sends the updated participant list |
 | `role_assigned` | Notifies users when a role changes |
-| `participant_removed` | Notifies room when a participant is removed |
+| `participant_removed` | Notifies the room when a participant is removed |
 | `removed_from_room` | Tells a user they were removed by the Host |
 | `action_error` | Sends permission or validation errors |
+
+---
+
+## OOP Structure Used on Backend
+
+The backend uses class-based room management to keep the logic organized.
+
+### `Room` class
+
+The `Room` class manages:
+
+- Room ID
+- Participants
+- Current video state
+- Playback state
+- Role checks
+- Playback updates
+- Role assignment
+- Host transfer
+- Participant removal
+
+### `Participant` class
+
+The `Participant` class represents each connected user and stores:
+
+- Socket/user ID
+- Username
+- Role
+- Join time
+
+This keeps the WebSocket logic cleaner because room-related behavior is encapsulated instead of being scattered across event handlers.
+
+---
+
+## Bonus Features Implemented
+
+| Bonus Idea | Status |
+|---|---|
+| OOP concepts for WebSocket server | Implemented with `Room` and `Participant` classes |
+| Text chat in the room | Implemented |
+| Transfer Host role | Implemented |
+| AI assistant | Implemented as an additional helper feature |
+| Reactions / emoji reactions | Not implemented |
+| Persistent rooms using database | Not implemented in MVP |
+| Authentication before joining | Not implemented in MVP |
+| Redis Pub/Sub / horizontal scaling | Explained as future improvement |
+
+---
+
+## Scalability Notes
+
+This MVP uses in-memory room storage, which is enough for the assignment demo and a single-server Render deployment.
+
+For a production-scale version with many rooms and users, the app can be improved by adding:
+
+- A database such as PostgreSQL, MongoDB, or SQLite for persistent rooms
+- Redis Pub/Sub for cross-server room communication
+- Socket.IO Redis Adapter for horizontal scaling
+- A load balancer for multiple WebSocket server instances
+- Connection pooling for database-backed features
+- Authentication for user identity and safer role management
+
+This would allow the system to scale beyond one server instance and support many concurrent rooms.
 
 ---
 
@@ -170,7 +257,7 @@ http://localhost:5000
 
 ## Deployment on Render
 
-Create a new **Web Service** on Render and connect your GitHub repository.
+Create a new **Web Service** on Render and connect the GitHub repository.
 
 Use these settings:
 
@@ -183,10 +270,14 @@ Start Command: npm start
 After deployment, test the health route:
 
 ```txt
-https://your-render-url.onrender.com/api/health
+https://youtube-watch-party-bfwn.onrender.com/api/health
 ```
 
-Then open the main live URL and test room creation/joining.
+Then open the main live URL:
+
+```txt
+https://youtube-watch-party-bfwn.onrender.com
+```
 
 ---
 
@@ -196,24 +287,52 @@ Then open the main live URL and test room creation/joining.
 2. Enter your name.
 3. Create a room as Host.
 4. Copy the invite link or room code.
-5. Open the link in another browser/incognito tab.
+5. Open the invite link in another browser/incognito tab.
 6. Join as a second user.
 7. Confirm the second user appears as Participant.
 8. From the Host tab, play/pause/seek/change the video.
 9. Confirm the second tab stays synchronized.
 10. Promote the Participant to Moderator.
-11. Confirm Moderator can control playback.
+11. Confirm the Moderator can control playback.
 12. Change them back to Participant.
-13. Confirm Participant becomes watch-only again.
+13. Confirm the Participant becomes watch-only again.
 14. Remove the participant from the Host panel.
-15. Test chat and AI Watch Assistant.
+15. Test room chat and AI Watch Assistant.
+
+---
+
+## Code Walkthrough Readiness
+
+### React + Vite
+
+React is used for the user interface, room creation/joining flow, participant list, chat, role controls, loading screen, and AI Watch Assistant. Vite is used for fast local development and production builds.
+
+### Express
+
+Express is used to create the Node.js backend server. It also serves the production React build after `npm run build`.
+
+### Socket.IO
+
+Socket.IO is used for real-time bidirectional communication. It lets the server broadcast playback updates only to users inside the same room.
+
+### YouTube IFrame API
+
+The YouTube IFrame API is used to embed and control the YouTube player programmatically. The app uses it to load videos, play, pause, and seek based on server sync events.
+
+### Backend role enforcement
+
+The backend checks the user's role before processing protected events like `play`, `pause`, `seek`, `change_video`, `assign_role`, and `remove_participant`.
+
+### Deployment
+
+The app is deployed as a Render Web Service. Render builds the React frontend using Vite and then starts the Express/Socket.IO server.
 
 ---
 
 ## Important Notes
 
 - Rooms are stored in memory, so they reset when the server restarts.
-- Some YouTube videos do not allow embedding. Use a normal public video for demo.
+- Some YouTube videos do not allow embedding. Use a normal public YouTube video for demo.
 - Browser extensions can sometimes block YouTube iframes. If the player does not load, try Chrome Incognito.
 - `localhost` only works on your own laptop. For testing on different devices/accounts, use the deployed Render URL.
 - This MVP focuses on the main assignment requirements. A database can be added later for persistent rooms.
@@ -224,22 +343,27 @@ Then open the main live URL and test room creation/joining.
 
 - Add user authentication
 - Store rooms permanently using PostgreSQL, MongoDB, or SQLite
-- Add Redis Pub/Sub for scaling across multiple servers
+- Add Redis Pub/Sub for cross-server communication
 - Use Socket.IO Redis Adapter for horizontal scaling
 - Add emoji reactions
 - Improve playback drift correction
 - Add room history and saved playlists
+- Add proper user profiles and saved watch rooms
 
 ---
 
 ## Project Status
 
-Core assignment features are implemented:
+The core assignment features are complete:
 
 - Real-time synchronization
 - Room-based watch parties
 - YouTube integration
 - WebSocket communication using Socket.IO
 - Role-based access control
+- Backend permission validation
 - Host participant management
-- Deployment-ready setup
+- Text chat
+- Host transfer
+- AI Watch Assistant
+- Public deployment
